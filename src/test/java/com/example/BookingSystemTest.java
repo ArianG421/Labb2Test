@@ -73,6 +73,98 @@ public class BookingSystemTest {
         verify(notificationService, never()).sendBookingConfirmation(any(Booking.class));
     }
 
+    @Test
+    void bookRoom_shouldThrowException_whenParametersAreInvalid() {
+        LocalDateTime validStartTime = LocalDateTime.now();
+        LocalDateTime validEndTime = validStartTime.plusHours(1);
+
+        // Mock timeProvider.getCurrentTime() för att returna en giltig tid.
+        when(timeProvider.getCurrentTime()).thenReturn(validStartTime);
+
+
+        assertThatThrownBy(() -> bookingSystem.bookRoom(null, validStartTime, validEndTime))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Bokning kräver giltiga start- och sluttider samt rum-id");
+        assertThatThrownBy(() -> bookingSystem.bookRoom(roomId, validStartTime.minusHours(2), validEndTime))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Kan inte boka tid i dåtid");
+        assertThatThrownBy(() -> bookingSystem.bookRoom(roomId, validEndTime, validStartTime))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Sluttid måste vara efter starttid");
+    }
+    @Test
+    void getAvailableRooms_shouldReturnAvailableRooms() {
+
+        Room mockRoom = mock(Room.class);
+        when(roomRepository.findAll()).thenReturn(Collections.singletonList(mockRoom));
+        when(mockRoom.isAvailable(startTime, endTime)).thenReturn(true);
+        List<Room> availableRooms = bookingSystem.getAvailableRooms(startTime, endTime);
+        assertThat(availableRooms).containsExactly(mockRoom);
+    }
+
+    @Test
+    void getAvailableRooms_shouldThrowException_whenParametersAreInvalid() {
+        // Act & Assert
+        assertThatThrownBy(() -> bookingSystem.getAvailableRooms(null, endTime))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Måste ange både start- och sluttid");
+
+        assertThatThrownBy(() -> bookingSystem.getAvailableRooms(startTime, startTime.minusHours(1)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Sluttid måste vara efter starttid");
+    }
+
+    @Test
+    void cancelBooking_shouldReturnTrue_whenBookingExists() throws NotificationException {
+        // Arrange
+        String bookingId = UUID.randomUUID().toString();
+        Room mockRoom = mock(Room.class);
+        Booking booking = new Booking(bookingId, roomId, startTime, endTime);
+        when(mockRoom.hasBooking(bookingId)).thenReturn(true);
+        when(mockRoom.getBooking(bookingId)).thenReturn(booking);
+        when(timeProvider.getCurrentTime()).thenReturn(now);
+        when(roomRepository.findAll()).thenReturn(Collections.singletonList(mockRoom));
+
+        // Act
+        boolean result = bookingSystem.cancelBooking(bookingId);
+
+        // Assert
+        assertThat(result).isTrue();
+        verify(roomRepository).save(mockRoom);
+        verify(notificationService).sendCancellationConfirmation(booking);
+    }
+
+    @Test
+    void cancelBooking_shouldThrowException_whenBookingHasStarted() {
+        // Arrange
+        String bookingId = UUID.randomUUID().toString();
+        Room mockRoom = mock(Room.class);
+        Booking booking = new Booking(bookingId, roomId, now.minusHours(1), endTime);
+        when(mockRoom.hasBooking(bookingId)).thenReturn(true);
+        when(mockRoom.getBooking(bookingId)).thenReturn(booking);
+        when(timeProvider.getCurrentTime()).thenReturn(now);
+        when(roomRepository.findAll()).thenReturn(Collections.singletonList(mockRoom));
+
+        // Act & Assert
+        assertThatThrownBy(() -> bookingSystem.cancelBooking(bookingId))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Kan inte avboka påbörjad eller avslutad bokning");
+    }
+
+    @Test
+    void cancelBooking_shouldReturnFalse_whenBookingDoesNotExist() throws NotificationException {
+        // Arrange
+        when(roomRepository.findAll()).thenReturn(Collections.singletonList(mock(Room.class)));
+
+        // Act
+        boolean result = bookingSystem.cancelBooking("nonExistentBookingId");
+
+        // Assert
+        assertThat(result).isFalse();
+        verify(roomRepository, never()).save(any(Room.class));
+        verify(notificationService, never()).sendCancellationConfirmation(any(Booking.class));
+    }
+
 
 
 }

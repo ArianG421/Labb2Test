@@ -19,6 +19,11 @@ public class ShoppingCart {
                 .mapToDouble(entry -> entry.getKey().getPrice() * entry.getValue())
                 .sum();
     }
+
+    public void removeItem(Item item) {
+        items.remove(item);
+    }
+
 }
 
 class Item {
@@ -33,4 +38,6 @@ class Item {
     public double getPrice() {
         return price;
     }
+
+
 }

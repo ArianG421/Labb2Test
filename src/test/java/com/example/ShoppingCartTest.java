@@ -33,5 +33,19 @@ public class ShoppingCartTest {
         assertThat(cart.getTotalPrice()).isEqualTo(0.0);
     }
 
+    @Test
+    void applyDiscount_ShouldReduceTotalPrice() {
+
+        ShoppingCart cart = new ShoppingCart();
+        Item item = new Item("Apple", 1.0);
+        cart.addItem(item, 10);
+
+        // 10% discount
+        cart.applyDiscount(0.1);
+
+
+        assertThat(cart.getTotalPrice()).isEqualTo(9.0);
+    }
+
 
 }

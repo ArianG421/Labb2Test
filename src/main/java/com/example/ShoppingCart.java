@@ -30,6 +30,10 @@ public class ShoppingCart {
         items.put(new Item("Discount", -totalPrice + discountedPrice), 1);
     }
 
+    public void updateQuantity(Item item, int quantity) {
+        items.put(item, quantity);
+    }
+
 }
 
 class Item {

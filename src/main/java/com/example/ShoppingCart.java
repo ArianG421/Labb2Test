@@ -24,6 +24,12 @@ public class ShoppingCart {
         items.remove(item);
     }
 
+    public void applyDiscount(double discountRate) {
+        double totalPrice = getTotalPrice();
+        double discountedPrice = totalPrice * (1 - discountRate);
+        items.put(new Item("Discount", -totalPrice + discountedPrice), 1);
+    }
+
 }
 
 class Item {

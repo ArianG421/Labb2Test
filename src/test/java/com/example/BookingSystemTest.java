@@ -104,7 +104,7 @@ public class BookingSystemTest {
 
     @Test
     void getAvailableRooms_shouldThrowException_whenParametersAreInvalid() {
-        // Act & Assert
+
         assertThatThrownBy(() -> bookingSystem.getAvailableRooms(null, endTime))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Måste ange både start- och sluttid");
@@ -116,7 +116,7 @@ public class BookingSystemTest {
 
     @Test
     void cancelBooking_shouldReturnTrue_whenBookingExists() throws NotificationException {
-        // Arrange
+
         String bookingId = UUID.randomUUID().toString();
         Room mockRoom = mock(Room.class);
         Booking booking = new Booking(bookingId, roomId, startTime, endTime);
@@ -125,10 +125,10 @@ public class BookingSystemTest {
         when(timeProvider.getCurrentTime()).thenReturn(now);
         when(roomRepository.findAll()).thenReturn(Collections.singletonList(mockRoom));
 
-        // Act
+
         boolean result = bookingSystem.cancelBooking(bookingId);
 
-        // Assert
+
         assertThat(result).isTrue();
         verify(roomRepository).save(mockRoom);
         verify(notificationService).sendCancellationConfirmation(booking);
@@ -136,7 +136,7 @@ public class BookingSystemTest {
 
     @Test
     void cancelBooking_shouldThrowException_whenBookingHasStarted() {
-        // Arrange
+
         String bookingId = UUID.randomUUID().toString();
         Room mockRoom = mock(Room.class);
         Booking booking = new Booking(bookingId, roomId, now.minusHours(1), endTime);
@@ -145,7 +145,7 @@ public class BookingSystemTest {
         when(timeProvider.getCurrentTime()).thenReturn(now);
         when(roomRepository.findAll()).thenReturn(Collections.singletonList(mockRoom));
 
-        // Act & Assert
+
         assertThatThrownBy(() -> bookingSystem.cancelBooking(bookingId))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Kan inte avboka påbörjad eller avslutad bokning");
@@ -153,13 +153,12 @@ public class BookingSystemTest {
 
     @Test
     void cancelBooking_shouldReturnFalse_whenBookingDoesNotExist() throws NotificationException {
-        // Arrange
+
         when(roomRepository.findAll()).thenReturn(Collections.singletonList(mock(Room.class)));
 
-        // Act
+
         boolean result = bookingSystem.cancelBooking("nonExistentBookingId");
 
-        // Assert
         assertThat(result).isFalse();
         verify(roomRepository, never()).save(any(Room.class));
         verify(notificationService, never()).sendCancellationConfirmation(any(Booking.class));
